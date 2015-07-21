@@ -1,0 +1,44 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Jul 17, 2015, 12:02:31 AM
+    Author     : ekarudianto
+*/
+
+#google_map_canvas * {
+    cursor: inherit;
+}
+
+.main-container {
+    width: 100%;
+    height: 100%;
+}
+
+.search-box {
+    background: #FFF !important;
+    width: 500px !important;
+    margin-top: 10px !important;
+    height: 40px !important;
+    border: 1px solid #DDD !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+
+    border-radius: 3px !important;
+    -webkit-border-radius: 3px !important;
+    -moz-border-radius: 3px !important;
+}
+
+.add-place-btn {
+    right: 10px !important;
+    bottom: 20px !important;
+}
+
+.search-box:focus,
+.search-box:focus:not([readonly]) {
+    border-color: #4285F4 !important;
+    border-bottom: 1px solid #4285F4 !important;
+    box-shadow: none !important;
+}

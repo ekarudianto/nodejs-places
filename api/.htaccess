@@ -1,0 +1,20 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+
+#rewrite condition for default url
+RewriteCond %{HTTP_HOST} ^api/v1/$
+
+#remove .php extension file
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+#Redirect to 403 forbidden Condition
+#if user type the url using .php extension in it
+RewriteCond %{ENV:REDIRECT_STATUS} ^$
+RewriteRule ^(.+)\.php - [F,L]
+
+#rewrite friendly url for user class
+
+RewriteRule ^places?$ places.php?method=get
+
+#regular expression used to match the parameter for a numbers
+RewriteRule ^places/(\d+)*$ places.php?method=get&id=$1
