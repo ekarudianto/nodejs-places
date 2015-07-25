@@ -125,18 +125,20 @@ GoogleMap.prototype.getMarkers = function() {
  */
 
 GoogleMap.prototype.dragEndListenerForMarker = function(marker) {
-    
+
     google.maps.event.addListener(marker, 'dragend', function(e) {
-         var payload = {
-             id: marker.properties.id,
-             lat: e.latLng.lat(),
-             lng: e.latLng.lng()
-         }
-         
-         socket.emit('update location', payload);
-         
+        var payload = {
+            id: marker.properties.id,
+            name: marker.properties.name,
+            description: marker.properties.description,
+            lat: e.latLng.lat(),
+            lng: e.latLng.lng()
+        }
+
+        socket.emit('update location', payload);
+
     });
-    
+
 }
 
 /*
@@ -198,6 +200,7 @@ GoogleMap.prototype.updateInfoWindowContent = function(marker) {
             div.appendChild(actionFooter);
 
             this.markers[i].infoWindow.setContent(div);
+            this.markers[i].properties = marker;
 
             /*
              * dom listener when users click on 'Edit' anchor

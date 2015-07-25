@@ -126,7 +126,7 @@ io.on('connection', function(socket) {
             method: 'PUT',
             json: payload
         }
-
+        
         request(options, function(error, response, body) {
             if (!error) {
                 io.emit('request response', body, 'UPDATE LOCATION');
