@@ -1,5 +1,5 @@
 var GoogleMap = function(selector, searchBoxSelector) {
-    
+
     /*
      * constructor
      * ===========
@@ -82,11 +82,11 @@ GoogleMap.prototype.getMarkers = function() {
 
     $.ajax({
         method: "GET",
-        url: "http://localhost/places/api/places",
+        url: "http://ekarudianto.com/api/places",
         dataType: 'json',
         contentType: 'application/json',
     }).done(function(results) {
-
+        console.info("markers has been fetched", results.data);
         if (results.httpCode == 200) {
             var data = results.data;
 
@@ -98,6 +98,7 @@ GoogleMap.prototype.getMarkers = function() {
             for (var i = 0, datas = data.length; i < datas; i++) {
                 var newLatLng = new google.maps.LatLng(data[i].lat, data[i].lng);
                 var marker = new google.maps.Marker({
+                    draggable: true,
                     map: map,
                     position: newLatLng,
                     animation: google.maps.Animation.DROP,
@@ -105,6 +106,8 @@ GoogleMap.prototype.getMarkers = function() {
                 });
 
                 me.addInfoBox(marker, "info", "initCall");
+                me.rightClickForMarker(marker);
+                me.dragEndListenerForMarker(marker);
                 me.markers.push(marker);
             }
 
@@ -114,6 +117,138 @@ GoogleMap.prototype.getMarkers = function() {
         console.error("fetching data was failed", data);
     });
 
+}
+
+/*
+ * Drag end listener method, used when user dragged a marker
+ * ==========================================================
+ */
+
+GoogleMap.prototype.dragEndListenerForMarker = function(marker) {
+    
+    google.maps.event.addListener(marker, 'dragend', function(e) {
+         var payload = {
+             id: marker.properties.id,
+             lat: e.latLng.lat(),
+             lng: e.latLng.lng()
+         }
+         
+         socket.emit('update location', payload);
+         
+    });
+    
+}
+
+/*
+ * Install Marker method, used when new marker has been created
+ * =============================================================
+ */
+
+GoogleMap.prototype.installMarker = function(newMarker) {
+
+    var map = this.map;
+    var newLatLng = new google.maps.LatLng(newMarker.lat, newMarker.lng);
+    var marker = new google.maps.Marker({
+        draggable: true,
+        map: map,
+        position: newLatLng,
+        animation: google.maps.Animation.DROP,
+        properties: newMarker
+    });
+
+    this.addInfoBox(marker, "info", "initCall");
+    this.rightClickForMarker(marker);
+    this.dragEndListenerForMarker(marker);
+    this.markers.push(marker);
+
+    if ($('#setOrigin').val() == "clickMarker") {
+        this.clearClickMarkers();
+    } else if ($('#setOrigin').val() == "searchMarker") {
+        this.clearSearchMarkers();
+        document.getElementById(this.searchBoxSelector).value = "";
+    }
+
+}
+
+/*
+ * Update infoWindow method, used when users do an update on marker
+ * Then update the infoWindow content
+ * =================================================================
+ */
+
+GoogleMap.prototype.updateInfoWindowContent = function(marker) {
+    var me = this;
+
+    for (var i = 0, installedMarkers = this.markers.length; i < installedMarkers; i++) {
+
+        if (this.markers[i].properties.id == marker.id) {
+
+            var div = document.createElement("div");
+            var p1 = document.createElement("span");
+            p1.style.textTransform = "capitalize";
+            var p2 = document.createElement("p");
+            var actionFooter = document.createElement("a");
+
+            p1.innerHTML = "<strong>" + marker.name + "</strong>";
+            p2.innerHTML = marker.description;
+            actionFooter.innerHTML = "Edit";
+
+            div.appendChild(p1);
+            div.appendChild(p2);
+            div.appendChild(actionFooter);
+
+            this.markers[i].infoWindow.setContent(div);
+
+            /*
+             * dom listener when users click on 'Edit' anchor
+             * ==============================================
+             */
+
+            google.maps.event.addDomListener(actionFooter, 'click', function(e) {
+                me.thirdParty.MaterializeMethods.openModal("#modal1");
+
+                document.getElementById('idForm').value = marker.id;
+                document.getElementById('nameForm').value = marker.name;
+                document.getElementById('descriptionForm').value = marker.description;
+                document.getElementById('latForm').value = marker.lat;
+                document.getElementById('lngForm').value = marker.lng;
+                document.getElementById('submitBtn').innerHTML = "UPDATE";
+
+                /*
+                 * function to adjust the input and textarea value placeholders
+                 * this is a materialize fix 
+                 * =============================================================
+                 */
+
+                $('input, textarea').each(function(i, e) {
+                    if ($(e).val().length > 0) {
+                        $(this).siblings('label, i').addClass('active');
+                    } else {
+                        $(this).siblings('label, i').removeClass('active');
+                    }
+                });
+
+            });
+
+        }
+    }
+}
+
+
+/*
+ * Update Marker location method, used when users do a dragged on a marker
+ * Then this method update the marker location
+ * =======================================================================
+ */
+
+GoogleMap.prototype.updateMarkerLocation = function(markerProp) {
+    for (var i = 0, installedMarkers = this.markers.length; i < installedMarkers; i++) {
+        if (this.markers[i].properties.id == markerProp.id) {
+            var latLng = new google.maps.LatLng(markerProp.lat, markerProp.lng);
+            this.markers[i].setPosition(latLng);
+            break;
+        }
+    }
 }
 
 /*
@@ -151,6 +286,7 @@ GoogleMap.prototype.addSearchBox = function() {
         for (var i = 0, place; place = places[i]; i++) {
             var marker = new google.maps.Marker({
                 icon: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/images/marker-icon.png",
+                draggable: true,
                 map: map,
                 title: place.name,
                 position: place.geometry.location,
@@ -182,6 +318,7 @@ GoogleMap.prototype.clickListener = function(e) {
 
     this.clickMarker = [];
     var marker = new google.maps.Marker({
+        draggable: true,
         map: map,
         position: e.latLng,
         animation: google.maps.Animation.DROP
@@ -189,6 +326,20 @@ GoogleMap.prototype.clickListener = function(e) {
 
     this.addInfoBox(marker, "add", "clickListener");
     this.clickMarker.push(marker);
+}
+
+/*
+ * right click listener, used when user do a right click on the marker
+ * ===================================================================
+ */
+
+GoogleMap.prototype.rightClickForMarker = function(marker) {
+
+    google.maps.event.addListener(marker, 'rightclick', function(e) {
+        if (confirm("Do you want to delete this place ?")) {
+            socket.emit('delete', marker.properties.id);
+        }
+    });
 }
 
 /*
@@ -209,11 +360,12 @@ GoogleMap.prototype.addInfoBox = function(marker, status, originCall) {
         var anchorN = document.createElement("a");
         var anchorY = document.createElement("a");
 
-        div.innerHTML = "Do you want to add this location to places ? <br />";
-        anchorY.className = "waves-effect waves-teal btn-flat";
+        div.innerHTML = "<strong>Add this location to places ?</strong> <br />";
         anchorY.innerHTML = "Yes";
-        anchorN.className = "waves-effect waves-teal btn-flat";
+        anchorY.style.marginRight = "10px";
+        anchorY.style.fontSize = "11px";
         anchorN.innerHTML = "Cancel";
+        anchorN.style.fontSize = "11px";
 
         div.appendChild(anchorY);
         div.appendChild(anchorN);
@@ -229,8 +381,27 @@ GoogleMap.prototype.addInfoBox = function(marker, status, originCall) {
 
             me.thirdParty.MaterializeMethods.openModal("#modal1");
 
+            document.getElementById('setOrigin').value = (originCall == "clickListener") ? "clickMarker" : "searchMarker";
+            document.getElementById('idForm').value = '';
+            document.getElementById('nameForm').value = '';
+            document.getElementById('descriptionForm').value = '';
             document.getElementById('latForm').value = marker.position.lat();
             document.getElementById('lngForm').value = marker.position.lng();
+            document.getElementById('submitBtn').innerHTML = "CREATE";
+
+            /*
+             * function to adjust the input and textarea value placeholders
+             * this is a materialize fix 
+             * =============================================================
+             */
+
+            $('input, textarea').each(function(i, e) {
+                if ($(e).val().length > 0) {
+                    $(this).siblings('label, i').addClass('active');
+                } else {
+                    $(this).siblings('label, i').removeClass('active');
+                }
+            });
 
         });
 
@@ -255,17 +426,21 @@ GoogleMap.prototype.addInfoBox = function(marker, status, originCall) {
     } else if (status == "info" && originCall == "initCall") {
 
         var div = document.createElement("div");
-        var p1 = document.createElement("p");
+        var p1 = document.createElement("span");
+        p1.style.textTransform = "capitalize";
         var p2 = document.createElement("p");
+        var actionFooter = document.createElement("a");
 
-        p1.innerHTML = "Name : " + marker.properties.name;
-        p2.innerHTML = "Description : " + marker.properties.description;
+        p1.innerHTML = "<strong>" + marker.properties.name + "</strong>";
+        p2.innerHTML = marker.properties.description;
+        actionFooter.innerHTML = "Edit";
 
         div.appendChild(p1);
         div.appendChild(p2);
+        div.appendChild(actionFooter);
 
         content = div;
-        
+
         /*
          * marker listener when user click on it
          * =====================================
@@ -274,16 +449,36 @@ GoogleMap.prototype.addInfoBox = function(marker, status, originCall) {
         google.maps.event.addListener(marker, 'click', function(e) {
             infowindow.open(map, marker);
         });
-        
+
         /*
-         * marker listener when user right click on it
-         * ===========================================
+         * dom listener when users click on 'Edit' anchor
+         * ==============================================
          */
 
-        google.maps.event.addListener(marker, 'rightclick', function(e) {
-            if (confirm("Do you want to delete this place ?")) {
-                alert("deleted !");
-            }
+        google.maps.event.addDomListener(actionFooter, 'click', function(e) {
+            me.thirdParty.MaterializeMethods.openModal("#modal1");
+
+            document.getElementById('idForm').value = marker.properties.id;
+            document.getElementById('nameForm').value = marker.properties.name;
+            document.getElementById('descriptionForm').value = marker.properties.description;
+            document.getElementById('latForm').value = marker.properties.lat;
+            document.getElementById('lngForm').value = marker.properties.lng;
+            document.getElementById('submitBtn').innerHTML = "UPDATE";
+
+            /*
+             * function to adjust the input and textarea value placeholders
+             * this is a materialize fix 
+             * =============================================================
+             */
+
+            $('input, textarea').each(function(i, e) {
+                if ($(e).val().length > 0) {
+                    $(this).siblings('label, i').addClass('active');
+                } else {
+                    $(this).siblings('label, i').removeClass('active');
+                }
+            });
+
         });
 
     }
@@ -321,6 +516,8 @@ GoogleMap.prototype.addInfoBox = function(marker, status, originCall) {
 
     });
 
+    marker.infoWindow = infowindow;
+
 }
 
 /*
@@ -334,4 +531,39 @@ GoogleMap.prototype.emptyMarkers = function(collMarkers) {
     }
 
     collMarkers = [];
+}
+
+/*
+ * method to remove all of the markers from clicking the map method
+ * ================================================================
+ */
+
+GoogleMap.prototype.clearClickMarkers = function() {
+    this.emptyMarkers(this.clickMarker);
+}
+
+/*
+ * method to remove all of the markers from do a search on place box method
+ * =========================================================================
+ */
+
+GoogleMap.prototype.clearSearchMarkers = function() {
+    this.emptyMarkers(this.searchMarkers);
+}
+
+/*
+ * method to remove a marker from the map upon a delete action from user
+ * =====================================================================
+ */
+
+GoogleMap.prototype.removeMarkerOnDelete = function(markerProp) {
+
+    for (var i = 0, installedMarkers = this.markers.length; i < installedMarkers; i++) {
+        if (this.markers[i].properties.id == markerProp.id) {
+            this.markers[i].setMap(null);
+            this.markers.splice(i, 1);
+            break;
+        }
+    }
+
 }

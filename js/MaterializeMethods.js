@@ -4,7 +4,9 @@
  * =============================================
  */
 
-var MaterializeMethods = function() {}
+var MaterializeMethods = function() {
+    this.Materialize = Materialize;
+}
 
 /*
  * below method returns a string representing the object
@@ -30,10 +32,10 @@ MaterializeMethods.prototype.collapsible = function(selector) {
  */
 
 MaterializeMethods.prototype.simpleToast = function(content, timeout) {
-    timeout = (!timeout) ? 0 : timeout;
+    timeout = (!timeout) ? 2000 : timeout;
     content = (!content) ? "This is Toast !" : content;
-
-    Materialize.toast(content, timeout);
+    
+    this.Materialize.toast(content, timeout);
 }
 
 /*

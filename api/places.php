@@ -18,7 +18,7 @@ class Places {
     public function __construct() {
         $this->dbConnection = new Connection("localhost", "root", "", "places");
         $this->HttpMessage = new HttpMessage();
-
+        $this->setHeaders();
         $this->index();
     }
 
@@ -29,9 +29,9 @@ class Places {
      * ===================================================
      */
 
-    private function setHeaders($method) {
+    private function setHeaders() {
         header('Content-Type: application/json; charset=utf-8');
-        header('Access-Control-Allow-Methods: ' . $method);
+        header('Access-Control-Allow-Methods: *');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
     }
@@ -61,7 +61,6 @@ class Places {
     }
 
     private function get() {
-        $this->setHeaders("GET");
         $this->HttpMessage->getStatusCode(405);
         $response = $this->HttpMessage->sendResponse(405, HTTP_405, null);
 
@@ -129,7 +128,6 @@ class Places {
 
     private function post() {
 
-        $this->setHeaders("POST");
         $this->HttpMessage->getStatusCode(405);
         $response = $this->HttpMessage->sendResponse(405, HTTP_405, null);
 
@@ -187,7 +185,6 @@ class Places {
 
     private function put() {
 
-        $this->setHeaders("PUT");
         $this->HttpMessage->getStatusCode(405);
         $response = $this->HttpMessage->sendResponse(405, HTTP_405, null);
         $json = file_get_contents("php://input");
@@ -229,6 +226,46 @@ class Places {
                 $response = $this->HttpMessage->sendResponse(400, HTTP_400, null);
             }
         }
+
+        echo json_encode($response, JSON_PRETTY_PRINT);
+    }
+
+    private function delete() {
+
+        $this->HttpMessage->getStatusCode(405);
+        $response = $this->HttpMessage->sendResponse(405, HTTP_405, null);
+
+        if (isset($_GET['id'])) {
+
+            $sql = "select * from places where id=" . $_GET['id'];
+            $sql = mysql_query($sql, $this->dbConnection->connect());
+            $num = mysql_num_rows($sql);
+            $data = array();
+
+            if ($num > 0) {
+
+                while ($row = mysql_fetch_array($sql)) {
+                    $data = array(
+                        "id" => $row["id"],
+                        "name" => $row["name"],
+                        "description" => $row["description"],
+                        "lat" => $row["lat"],
+                        "lng" => $row["lng"]
+                    );
+                }
+                
+                $sql = "delete from places where id =" . $_GET['id'];
+                $sql = mysql_query($sql, $this->dbConnection->connect());
+
+                $this->HttpMessage->getStatusCode(200);
+                $response = $this->HttpMessage->sendResponse(200, HTTP_200, $data);
+                
+            } else {
+                $this->HttpMessage->getStatusCode(404);
+                $response = $this->HttpMessage->sendResponse(404, HTTP_404, null);
+            }
+        }
+
 
         echo json_encode($response, JSON_PRETTY_PRINT);
     }
