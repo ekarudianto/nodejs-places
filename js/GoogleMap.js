@@ -67,7 +67,7 @@ GoogleMap.prototype.toString = function() {
  */
 
 GoogleMap.prototype.init = function() {
-
+    
     var windowWidth = $(window).width();
     var windowHeight = $(window).height();
     var me = this;
@@ -330,9 +330,8 @@ GoogleMap.prototype.addSearchBox = function() {
             me.addInfoBox(marker, "add", "searchBox");
             me.searchMarkers.push(marker);
             bounds.extend(place.geometry.location);
+            map.setCenter(place.geometry.location);
         }
-
-        map.fitBounds(bounds);
 
     });
 

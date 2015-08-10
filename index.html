@@ -14,6 +14,20 @@
     </head>
     <body>
 
+        <div id="preloader">
+            <div class="preloader-wrapper small active">
+                <div class="spinner-layer spinner-red-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div><div class="gap-patch">
+                        <div class="circle"></div>
+                    </div><div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <input id="search-box" class="search-box" type="text" placeholder="Search">
         <div id="maps" class="main-container"></div>
 
@@ -64,8 +78,16 @@
         <script src="js/GoogleMap.js"></script>
 
         <script>
+            
             var Google = new GoogleMap("maps", "search-box");
             google.maps.event.addDomListener(window, "load", Google.init());
+
+            window.onload = function() {
+                $('#preloader').fadeOut('medium', function() {
+                    $(this).remove();
+                });
+            }
+            
         </script>
 
         <script src="js/SocketClient.js"></script>
