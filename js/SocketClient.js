@@ -33,6 +33,15 @@ var socket = io();
 var Materialize = new MaterializeMethods();
 
 /*
+ * event handler when the socket connection is error
+ * =================================================
+ */
+
+socket.io.on('connect_error', function() {
+    console.warn("Server is down !");
+});
+
+/*
  * received event collections from socket server
  * =============================================
  */
